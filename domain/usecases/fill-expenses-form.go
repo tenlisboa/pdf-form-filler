@@ -2,7 +2,9 @@ package usecases
 
 import (
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/tenlisboa/pdf/domain/entities"
 	"github.com/tenlisboa/pdf/domain/services"
@@ -27,9 +29,8 @@ func (uc FillExpensesFormUsecase) Execute() {
 	pdfService := services.NewPDFService()
 
 	for _, expense := range expenses {
-		pdfService.FillForm(entityToMap(expense), "./pdf/form.pdf", fmt.Sprintf("./pdf/filled/%s/%s", expense.CreatedAt, getPdfNameBasedOnEntity(expense)))
+		pdfService.FillForm(entityToMap(expense), "./pdf/form.pdf", fmt.Sprintf("./pdf/filled/%s", getPdfNameBasedOnEntity(expense)))
 	}
-	fmt.Println(expenses[8])
 }
 
 func dataToEntity(values [][]interface{}) []entities.Expense {
@@ -39,13 +40,13 @@ func dataToEntity(values [][]interface{}) []entities.Expense {
 			Email:          fmt.Sprintf("%s", row[1]),
 			RequestingName: fmt.Sprintf("%s", row[2]),
 			ReceiverName:   fmt.Sprintf("%s", row[3]),
-			RefundType:     fmt.Sprintf("%s", row[4]),
-			ExpenseType:    fmt.Sprintf("%s", row[5]),
-			Organization:   fmt.Sprintf("%s", row[6]),
-			Value:          fmt.Sprintf("%s", row[7]),
-			Description:    fmt.Sprintf("%s", row[8]),
-			NFLinks:        strings.Split(fmt.Sprintf("%s", row[9]), ", "),
-			Observations:   fmt.Sprintf("%s", row[10]),
+			RefundType:     fmt.Sprintf("%s", row[10]),
+			ExpenseType:    fmt.Sprintf("%s", row[4]),
+			Organization:   fmt.Sprintf("%s", row[5]),
+			Value:          fmt.Sprintf("%s", row[6]),
+			Description:    fmt.Sprintf("%s", row[7]),
+			NFLinks:        strings.Split(fmt.Sprintf("%s", row[8]), ", "),
+			Observations:   fmt.Sprintf("%s", row[9]),
 			CreatedAt:      fmt.Sprintf("%s", row[0]),
 		})
 	}
@@ -57,7 +58,6 @@ func entityToMap(e entities.Expense) map[string]interface{} {
 
 	dataArr := strings.Split(e.CreatedAt, " ")
 	dataArr = strings.Split(dataArr[0], "/")
-	// TODO Terminar, tem alguns campos que vao precisar serem tratados
 	mapExpense := map[string]interface{}{
 		"solicitante":         e.RequestingName,
 		"recebedor":           e.ReceiverName,
@@ -105,5 +105,9 @@ func getValueBasedOnExpenseType(expenseType, value, field string) string {
 }
 
 func getPdfNameBasedOnEntity(expense entities.Expense) string {
-	return fmt.Sprintf("%s_%s.pdf", expense.CreatedAt, strings.ReplaceAll(strings.ToLower(expense.RequestingName), " ", "_"))
+	dateTime, err := time.Parse("02/01/2006 15:04:05", expense.CreatedAt)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return fmt.Sprintf("%d_%s.pdf", dateTime.Unix(), strings.ReplaceAll(strings.ToLower(expense.RequestingName), " ", "_"))
 }
