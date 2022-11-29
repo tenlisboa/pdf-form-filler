@@ -8,6 +8,10 @@ import (
 
 type PDFService struct{}
 
+func NewPDFService() PDFService {
+	return PDFService{}
+}
+
 func (pdf PDFService) FillForm(data map[string]interface{}, formPath, filledFormPath string) {
 	// Fill the form PDF with our values.
 	err := fillpdf.Fill(data, formPath, filledFormPath)

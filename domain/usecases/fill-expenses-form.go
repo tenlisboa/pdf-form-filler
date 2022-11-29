@@ -2,7 +2,6 @@ package usecases
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/tenlisboa/pdf/domain/entities"
@@ -17,32 +16,94 @@ func (uc FillExpensesFormUsecase) Execute() {
 			"https://www.googleapis.com/auth/spreadsheets.readonly",
 			"https://www.googleapis.com/auth/drive.readonly",
 		},
-		"16heR7XYYqV_1Bq8087syWbd3q0_NrkSbQUmqFgcnOGE",
-		"A2:J",
+		"1TwEFNyrAtzjUkZyIvHX3otJGpHgBjIcjFCE02CXECG4",
+		"A2:K",
 	)
 
-	expenses := presentData(sv.GetSheetData())
+	expenses := dataToEntity(sv.GetSheetData())
 
 	fmt.Println(expenses)
+
+	pdfService := services.NewPDFService()
+
+	for _, expense := range expenses {
+		pdfService.FillForm(entityToMap(expense), "./pdf/form.pdf", fmt.Sprintf("./pdf/filled/%s/%s", expense.CreatedAt, getPdfNameBasedOnEntity(expense)))
+	}
+	fmt.Println(expenses[8])
 }
 
-func presentData(values [][]interface{}) []entities.Expense {
+func dataToEntity(values [][]interface{}) []entities.Expense {
 	expenses := []entities.Expense{}
 	for _, row := range values {
-		parsedValue, _ := strconv.ParseFloat(fmt.Sprintf("%s", row[3]), 64)
 		expenses = append(expenses, entities.Expense{
-			RequestingName:     fmt.Sprintf("%s", row[1]),
-			BeneficiaryName:    fmt.Sprintf("%s", row[2]),
-			Value:              parsedValue,
-			Description:        fmt.Sprintf("%s", row[4]),
-			NFLinks:            strings.Split(fmt.Sprintf("%s", row[5]), ", "),
-			AccountBankingData: fmt.Sprintf("%s", row[6]),
-			Email:              fmt.Sprintf("%s", row[7]),
-			RefundReceived:     fmt.Sprintf("%s", row[8]) == "Sim",
-			FormFilled:         fmt.Sprintf("%s", row[9]) == "Sim",
-			CreatedAt:          fmt.Sprintf("%s", row[0]),
+			Email:          fmt.Sprintf("%s", row[1]),
+			RequestingName: fmt.Sprintf("%s", row[2]),
+			ReceiverName:   fmt.Sprintf("%s", row[3]),
+			RefundType:     fmt.Sprintf("%s", row[4]),
+			ExpenseType:    fmt.Sprintf("%s", row[5]),
+			Organization:   fmt.Sprintf("%s", row[6]),
+			Value:          fmt.Sprintf("%s", row[7]),
+			Description:    fmt.Sprintf("%s", row[8]),
+			NFLinks:        strings.Split(fmt.Sprintf("%s", row[9]), ", "),
+			Observations:   fmt.Sprintf("%s", row[10]),
+			CreatedAt:      fmt.Sprintf("%s", row[0]),
 		})
 	}
 
 	return expenses
+}
+
+func entityToMap(e entities.Expense) map[string]interface{} {
+
+	dataArr := strings.Split(e.CreatedAt, " ")
+	dataArr = strings.Split(dataArr[0], "/")
+	// TODO Terminar, tem alguns campos que vao precisar serem tratados
+	mapExpense := map[string]interface{}{
+		"solicitante":         e.RequestingName,
+		"recebedor":           e.ReceiverName,
+		"descricao_despesa_1": e.Description,
+		"valor_total":         e.Value,
+		"data_dia":            dataArr[0],
+		"data_mes":            dataArr[1],
+		"data_ano":            dataArr[2],
+		"p_lider":             getStrBasedOnRefundType(e.RefundType, "p_lider"),
+		"p_fornecedor":        getStrBasedOnRefundType(e.RefundType, "p_fornecedor"),
+		"p_adiantamento":      getStrBasedOnRefundType(e.RefundType, "p_adiantamento"),
+		"orcamento_valor":     getValueBasedOnExpenseType(e.ExpenseType, "orcamento_valor", e.Value),
+		"jejum_alim_vest":     getValueBasedOnExpenseType(e.ExpenseType, "jejum_alim_vest", e.Value),
+		"jejum_med":           getValueBasedOnExpenseType(e.ExpenseType, "jejum_med", e.Value),
+		"jejum_moradia":       getValueBasedOnExpenseType(e.ExpenseType, "jejum_moradia", e.Value),
+		"jejum_servico_pub":   getValueBasedOnExpenseType(e.ExpenseType, "jejum_servico_pub", e.Value),
+		"conta_cadastrada":    "X",
+	}
+
+	return mapExpense
+}
+
+func getStrBasedOnRefundType(refundType, field string) string {
+	if strings.EqualFold(refundType, field) {
+		return "X"
+	}
+
+	return ""
+}
+
+func getValueBasedOnExpenseType(expenseType, value, field string) string {
+	fastField := map[string]string{
+		"alimentacao_vestimenta": "jejum_alim_vest",
+		"moradia":                "jejum_moradia",
+		"despesa_medica":         "jejum_med",
+		"servicos_publicos":      "jejum_servico_pub",
+		"orcamento":              "orcamento_valor",
+	}
+
+	if fastField[expenseType] == field {
+		return value
+	}
+
+	return ""
+}
+
+func getPdfNameBasedOnEntity(expense entities.Expense) string {
+	return fmt.Sprintf("%s_%s.pdf", expense.CreatedAt, strings.ReplaceAll(strings.ToLower(expense.RequestingName), " ", "_"))
 }
