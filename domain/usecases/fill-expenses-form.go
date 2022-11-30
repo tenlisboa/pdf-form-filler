@@ -59,6 +59,8 @@ func entityToMap(e entities.Expense) map[string]interface{} {
 	dataArr := strings.Split(e.CreatedAt, " ")
 	dataArr = strings.Split(dataArr[0], "/")
 	mapExpense := map[string]interface{}{
+		"estaca":              "Joinville Norte",
+		"ala":                 "Aventureiro",
 		"solicitante":         e.RequestingName,
 		"recebedor":           e.ReceiverName,
 		"descricao_despesa_1": e.Description,
@@ -69,6 +71,7 @@ func entityToMap(e entities.Expense) map[string]interface{} {
 		"p_lider":             getStrBasedOnRefundType(e.RefundType, "p_lider"),
 		"p_fornecedor":        getStrBasedOnRefundType(e.RefundType, "p_fornecedor"),
 		"p_adiantamento":      getStrBasedOnRefundType(e.RefundType, "p_adiantamento"),
+		"orcamento_org":       getOrgBasedOnExpenseType(e),
 		"orcamento_valor":     getValueBasedOnExpenseType(e.ExpenseType, "orcamento_valor", e.Value),
 		"jejum_alim_vest":     getValueBasedOnExpenseType(e.ExpenseType, "jejum_alim_vest", e.Value),
 		"jejum_med":           getValueBasedOnExpenseType(e.ExpenseType, "jejum_med", e.Value),
@@ -80,15 +83,29 @@ func entityToMap(e entities.Expense) map[string]interface{} {
 	return mapExpense
 }
 
+func getOrgBasedOnExpenseType(e entities.Expense) string {
+	// TODO mudar quando tiver ocamento
+	if e.ExpenseType == "orcamento" {
+		return "Atribuição de Orçamento"
+	}
+
+	return ""
+}
+
 func getStrBasedOnRefundType(refundType, field string) string {
-	if strings.EqualFold(refundType, field) {
+	fastField := map[string]string{
+		"para_lider":          "p_lider",
+		"pagamento_adiantado": "p_adiantamento",
+	}
+
+	if fastField[refundType] == field {
 		return "X"
 	}
 
 	return ""
 }
 
-func getValueBasedOnExpenseType(expenseType, value, field string) string {
+func getValueBasedOnExpenseType(expenseType, field, value string) string {
 	fastField := map[string]string{
 		"alimentacao_vestimenta": "jejum_alim_vest",
 		"moradia":                "jejum_moradia",
