@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tenlisboa/pdf/domain/entities"
@@ -24,13 +25,26 @@ func (uc FillExpensesFormUsecase) Execute() {
 
 	expenses := dataToEntity(sv.GetSheetData())
 
-	fmt.Println(expenses)
-
 	pdfService := services.NewPDFService()
 
+	// 2.5 seconds to convert 10 pdfs
+	// for _, expense := range expenses {
+	// 	pdfService.FillForm(entityToMap(expense), "./pdf/form.pdf", fmt.Sprintf("./pdf/filled/%s", getPdfNameBasedOnEntity(expense)))
+	// }
+
+	// 965.066009 ms to convert 10 pdfs
+	start := time.Now()
+	var wg sync.WaitGroup
 	for _, expense := range expenses {
-		pdfService.FillForm(entityToMap(expense), "./pdf/form.pdf", fmt.Sprintf("./pdf/filled/%s", getPdfNameBasedOnEntity(expense)))
+		fmt.Println(expense)
+		wg.Add(1)
+		go func(expense entities.Expense) {
+			pdfService.FillForm(entityToMap(expense), "./pdf/form.pdf", fmt.Sprintf("./pdf/filled/%s", getPdfNameBasedOnEntity(expense)))
+			wg.Done()
+		}(expense)
 	}
+	wg.Wait()
+	fmt.Println(time.Since(start))
 }
 
 func dataToEntity(values [][]interface{}) []entities.Expense {
