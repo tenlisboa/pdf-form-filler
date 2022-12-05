@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/tenlisboa/pdf/domain/services/abstract"
 	"golang.org/x/oauth2/google"
@@ -58,4 +61,45 @@ func (s SheetsService) GetSheetData() [][]interface{} {
 	}
 
 	return response.Values
+}
+
+func (s SheetsService) GetLastRange() (string, error) {
+	f, err := os.ReadFile("./config/last_range")
+	if err != nil {
+		return "", err
+	}
+
+	return string(f), nil
+}
+
+func (s SheetsService) SaveLastRange(lastRange string, listLength int) error {
+	rg := regexp.MustCompile(`([0-9]+)`)
+	numberStr := rg.FindString(lastRange)
+
+	if len(numberStr) < 1 {
+		log.Fatalln("Error on saving last range")
+	}
+
+	number, err := strconv.ParseInt(numberStr, 0, 64)
+	if err != nil {
+		return err
+	}
+
+	newLastRange := strings.ReplaceAll(lastRange, numberStr, fmt.Sprint(number+int64(listLength)))
+
+	f, err := os.Open("./config/last_range")
+	if err != nil {
+		f, err = os.Create("./config/last_range")
+		if err != nil {
+			return err
+		}
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(newLastRange)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

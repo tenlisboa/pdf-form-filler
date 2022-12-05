@@ -23,14 +23,16 @@ func (uc FillExpensesFormUsecase) Execute() {
 		"A2:K",
 	)
 
+	lastRange, err := sv.GetLastRange()
+	if err != nil {
+		sv.Range = "A2:K"
+	} else {
+		sv.Range = lastRange
+	}
+
 	expenses := dataToEntity(sv.GetSheetData())
 
 	pdfService := services.NewPDFService()
-
-	// 2.5 seconds to convert 10 pdfs
-	// for _, expense := range expenses {
-	// 	pdfService.FillForm(entityToMap(expense), "./pdf/form.pdf", fmt.Sprintf("./pdf/filled/%s", getPdfNameBasedOnEntity(expense)))
-	// }
 
 	// 965.066009 ms to convert 10 pdfs
 	start := time.Now()
@@ -45,6 +47,8 @@ func (uc FillExpensesFormUsecase) Execute() {
 	}
 	wg.Wait()
 	fmt.Println(time.Since(start))
+
+	sv.SaveLastRange(sv.Range, len(expenses))
 }
 
 func dataToEntity(values [][]interface{}) []entities.Expense {
