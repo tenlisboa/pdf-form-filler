@@ -2,7 +2,11 @@ module github.com/tenlisboa/pdf
 
 go 1.19
 
-require github.com/desertbit/fillpdf v0.0.2
+require (
+	github.com/desertbit/fillpdf v0.0.2
+	golang.org/x/oauth2 v0.2.0
+	google.golang.org/api v0.103.0
+)
 
 require (
 	cloud.google.com/go/compute v1.12.1 // indirect
@@ -15,10 +19,8 @@ require (
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
-	golang.org/x/oauth2 v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
-	google.golang.org/api v0.103.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
 	google.golang.org/grpc v1.50.1 // indirect
